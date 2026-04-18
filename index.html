@@ -86,22 +86,14 @@
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<!-- Three.js for MagicRings -->
+<!-- Three.js for Aurora shader -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<!-- GSAP for TargetCursor -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
 <style>
 /* ═══════════════ RESET & VARIABLES ═══════════════ */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-@property --electric-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
 
 :root {
   --bg-0: #04060b;
@@ -122,6 +114,7 @@
   --red: #ef4444;
   --red-dim: rgba(239, 68, 68, 0.15);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Syne', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
   --max-w: 1080px;
   --section-pad: 100px;
@@ -163,6 +156,7 @@ body {
 
 /* ═══════════════ TYPOGRAPHY ═══════════════ */
 h1 {
+  font-family: var(--font-heading);
   font-size: clamp(32px, 5vw, 56px);
   font-weight: 800;
   line-height: 1.1;
@@ -171,6 +165,7 @@ h1 {
 }
 
 h2 {
+  font-family: var(--font-heading);
   font-size: clamp(24px, 3.5vw, 40px);
   font-weight: 700;
   color: var(--text-1);
@@ -179,6 +174,7 @@ h2 {
 }
 
 h3 {
+  font-family: var(--font-heading);
   font-size: 18px;
   font-weight: 600;
   color: var(--text-1);
@@ -290,10 +286,16 @@ p { margin-bottom: 12px; }
   border-bottom: 1px solid var(--border);
 }
 
-.hero-rings {
+.hero-aurora {
   position: absolute;
   inset: 0;
   z-index: 0;
+}
+
+.hero-aurora canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .hero-content {
@@ -443,55 +445,74 @@ p { margin-bottom: 12px; }
   padding: 0;
 }
 
-.electric-border-wrap {
+/* Electric Border — from ReactBits (canvas-based with noise distortion) */
+.electric-border {
+  --electric-border-color: #7df9ff;
+  --electric-light-color: #c4feff;
   position: relative;
   border-radius: 16px;
-  padding: 3px;
-  background: conic-gradient(
-    from var(--electric-angle),
-    var(--accent) 0%,
-    transparent 12%,
-    var(--accent-2) 25%,
-    transparent 37%,
-    var(--accent) 50%,
-    transparent 62%,
-    var(--accent-2) 75%,
-    transparent 87%,
-    var(--accent) 100%
-  );
-  animation: electric-spin 3s linear infinite;
+  overflow: visible;
+  isolation: isolate;
 }
 
-@keyframes electric-spin {
-  to { --electric-angle: 360deg; }
+.eb-canvas-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
 }
 
-.electric-border-wrap::before {
-  content: '';
+.eb-canvas { display: block; }
+
+.eb-content {
+  position: relative;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.eb-layers {
   position: absolute;
   inset: 0;
-  border-radius: 16px;
-  background: conic-gradient(
-    from var(--electric-angle),
-    var(--accent) 0%,
-    transparent 15%,
-    var(--accent-2) 30%,
-    transparent 45%,
-    var(--accent) 60%,
-    transparent 75%,
-    var(--accent-2) 90%,
-    var(--accent) 100%
-  );
-  filter: blur(12px);
-  opacity: 0.5;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.eb-glow-1,
+.eb-glow-2,
+.eb-background-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.eb-glow-1 {
+  border: 2px solid rgba(125, 249, 255, 0.6);
+  filter: blur(1px);
+}
+
+.eb-glow-2 {
+  border: 2px solid var(--electric-light-color);
+  filter: blur(4px);
+}
+
+.eb-background-glow {
   z-index: -1;
-  animation: electric-spin 3s linear infinite;
+  transform: scale(1.1);
+  filter: blur(32px);
+  opacity: 0.3;
+  background: linear-gradient(-30deg, var(--electric-light-color), transparent, var(--electric-border-color));
 }
 
 .electric-inner {
   background: var(--bg-2);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 28px;
+  position: relative;
 }
 
 .electric-inner li::before,
@@ -1055,44 +1076,22 @@ p { margin-bottom: 12px; }
   transform: translateY(0);
 }
 
-/* ═══════════════ TARGET CURSOR ═══════════════ */
-.target-cursor-wrapper {
+/* ═══════════════ SPLASH CURSOR ═══════════════ */
+.splash-cursor-container {
   position: fixed;
   top: 0;
   left: 0;
-  width: 0;
-  height: 0;
+  z-index: 50;
   pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: difference;
+  width: 100%;
+  height: 100%;
 }
 
-.target-cursor-dot {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 4px;
-  height: 4px;
-  background: #fff;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  will-change: transform;
+.splash-cursor-container canvas {
+  width: 100vw;
+  height: 100vh;
+  display: block;
 }
-
-.target-cursor-corner {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  border: 3px solid #fff;
-  will-change: transform;
-}
-
-.corner-tl { transform: translate(-150%, -150%); border-right: none; border-bottom: none; }
-.corner-tr { transform: translate(50%, -150%); border-left: none; border-bottom: none; }
-.corner-br { transform: translate(50%, 50%); border-left: none; border-top: none; }
-.corner-bl { transform: translate(-150%, 50%); border-right: none; border-top: none; }
 
 /* ═══════════════ RESPONSIVE ═══════════════ */
 @media (max-width: 768px) {
@@ -1106,18 +1105,9 @@ p { margin-bottom: 12px; }
 </head>
 <body>
 
-<!-- ═══════════════ TARGET CURSOR ═══════════════ -->
-<div class="target-cursor-wrapper" id="targetCursor">
-  <div class="target-cursor-dot" id="cursorDot"></div>
-  <div class="target-cursor-corner corner-tl"></div>
-  <div class="target-cursor-corner corner-tr"></div>
-  <div class="target-cursor-corner corner-br"></div>
-  <div class="target-cursor-corner corner-bl"></div>
-</div>
-
 <!-- ═══════════════ HERO ═══════════════ -->
 <section class="hero">
-  <div class="hero-rings" id="heroRings"></div>
+  <div class="hero-aurora" id="heroAurora"></div>
   <div class="hero-content">
     <div class="launch-banner">Launching May 1, 2026 · Early bird pricing</div>
     <div class="label">A course for product designers</div>
@@ -1201,15 +1191,19 @@ p { margin-bottom: 12px; }
         </ul>
       </div>
       <div class="compare-col compare-highlight">
-        <div class="electric-border-wrap">
-          <div class="electric-inner">
-            <h3>AI for Designers</h3>
-            <ul>
-              <li>Lifetime access to all materials</li>
-              <li>Content updated alongside the tools</li>
-              <li>New lessons added for free</li>
-              <li>Coming soon: OpenAI Codex, ChatGPT + Figma, new workflows</li>
-            </ul>
+        <div class="electric-border" data-electric-color="#7df9ff" data-electric-speed="1" data-electric-chaos="0.12" data-electric-radius="16">
+          <div class="eb-canvas-container"><canvas class="eb-canvas"></canvas></div>
+          <div class="eb-layers"><div class="eb-glow-1"></div><div class="eb-glow-2"></div><div class="eb-background-glow"></div></div>
+          <div class="eb-content">
+            <div class="electric-inner">
+              <h3>AI for Designers</h3>
+              <ul>
+                <li>Lifetime access to all materials</li>
+                <li>Content updated alongside the tools</li>
+                <li>New lessons added for free</li>
+                <li>Coming soon: OpenAI Codex, ChatGPT + Figma, new workflows</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -1404,25 +1398,29 @@ p { margin-bottom: 12px; }
   </div>
 </section>
 
-<!-- ═══════════════ ЦІНА ═══════════════ -->
+<!-- ═══════════════ PRICING ═══════════════ -->
 <section class="section" id="pricing">
   <div class="container text-center">
-    <h2 class="split-text reveal" data-split>Одна ціна. Доступ назавжди.</h2>
-    <div class="electric-border-wrap reveal" style="max-width: 440px; margin: 32px auto 0;">
-      <div class="electric-inner" style="padding: 40px; text-align: center;">
-        <h3 style="font-size: 18px; margin-bottom: 8px;">AI for Designers — Course</h3>
-        <div class="price">$79</div>
-        <ul class="pricing-list" style="list-style: none; text-align: left; margin: 20px 0;">
-          <li>15+ video lessons (4+ hours)</li>
-          <li>Real workflows with live demos</li>
-          <li>Companion text materials for every lesson</li>
-          <li>Prompts, templates, checklists</li>
-          <li>Claude Skills set for designers</li>
-          <li>Lifetime access + all updates and new lessons</li>
-          <li>Direct access to the author for questions</li>
-        </ul>
-        <a href="#pricing" class="cta" style="display:block;width:100%;text-align:center;">Get early access — $79</a>
-        <p class="subtext" style="margin-top: 12px;">Lifetime access · Instant access after payment</p>
+    <h2 class="split-text reveal" data-split>One price. Lifetime access.</h2>
+    <div class="electric-border reveal" data-electric-color="#7df9ff" data-electric-speed="1" data-electric-chaos="0.12" data-electric-radius="16" style="max-width: 440px; margin: 32px auto 0;">
+      <div class="eb-canvas-container"><canvas class="eb-canvas"></canvas></div>
+      <div class="eb-layers"><div class="eb-glow-1"></div><div class="eb-glow-2"></div><div class="eb-background-glow"></div></div>
+      <div class="eb-content">
+        <div class="electric-inner" style="padding: 40px; text-align: center;">
+          <h3 style="font-size: 18px; margin-bottom: 8px;">AI for Designers — Course</h3>
+          <div class="price">$79</div>
+          <ul class="pricing-list" style="list-style: none; text-align: left; margin: 20px 0;">
+            <li>15+ video lessons (4+ hours)</li>
+            <li>Real workflows with live demos</li>
+            <li>Companion text materials for every lesson</li>
+            <li>Prompts, templates, checklists</li>
+            <li>Claude Skills set for designers</li>
+            <li>Lifetime access + all updates and new lessons</li>
+            <li>Direct access to the author for questions</li>
+          </ul>
+          <a href="#pricing" class="cta" style="display:block;width:100%;text-align:center;">Get early access — $79</a>
+          <p class="subtext" style="margin-top: 12px;">Lifetime access · Instant access after payment</p>
+        </div>
       </div>
     </div>
   </div>
@@ -1488,15 +1486,15 @@ p { margin-bottom: 12px; }
 <!-- ═══════════════ SCRIPTS ═══════════════ -->
 <script>
 // ════════════════════════════════════════════════════════
-// 1. MAGIC RINGS — Three.js WebGL shader (Hero background)
+// 1. AURORA — Three.js WebGL shader (Hero background)
 // ════════════════════════════════════════════════════════
-(function initMagicRings() {
-  const mount = document.getElementById('heroRings');
+(function initAurora() {
+  const mount = document.getElementById('heroAurora');
   if (!mount) return;
 
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+    renderer = new THREE.WebGLRenderer({ alpha: true, premultipliedAlpha: true, antialias: true });
   } catch(e) { return; }
 
   renderer.setClearColor(0x000000, 0);
@@ -1509,93 +1507,93 @@ p { margin-bottom: 12px; }
 
   const vertexShader = `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 
+  // Aurora fragment shader adapted from ReactBits (WebGL1 compatible)
   const fragmentShader = `
     precision highp float;
-    uniform float uTime, uAttenuation, uLineThickness;
-    uniform float uBaseRadius, uRadiusStep, uScaleRate;
-    uniform float uOpacity, uNoiseAmount, uRotation, uRingGap;
-    uniform float uFadeIn, uFadeOut;
-    uniform float uMouseInfluence, uHoverAmount, uHoverScale, uParallax, uBurst;
-    uniform vec2 uResolution, uMouse;
-    uniform vec3 uColor, uColorTwo;
-    uniform int uRingCount;
+    uniform float uTime;
+    uniform float uAmplitude;
+    uniform vec3 uColorStop0;
+    uniform vec3 uColorStop1;
+    uniform vec3 uColorStop2;
+    uniform vec2 uResolution;
+    uniform float uBlend;
 
-    const float HP = 1.5707963;
-    const float CYCLE = 3.45;
-
-    float fade(float t) {
-      return t < uFadeIn ? smoothstep(0.0, uFadeIn, t) : 1.0 - smoothstep(uFadeOut, CYCLE - 0.2, t);
+    vec3 permute(vec3 x) {
+      return mod(((x * 34.0) + 1.0) * x, 289.0);
     }
 
-    float ring(vec2 p, float ri, float cut, float t0, float px) {
-      float t = mod(uTime + t0, CYCLE);
-      float r = ri + t / CYCLE * uScaleRate;
-      float d = abs(length(p) - r);
-      float a = atan(abs(p.y), abs(p.x)) / HP;
-      float th = max(1.0 - a, 0.5) * px * uLineThickness;
-      float h = (1.0 - smoothstep(th, th * 1.5, d)) + 1.0;
-      d += pow(cut * a, 3.0) * r;
-      return h * exp(-uAttenuation * d) * fade(t);
+    float snoise(vec2 v){
+      const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+      vec2 i  = floor(v + dot(v, C.yy));
+      vec2 x0 = v - i + dot(i, C.xx);
+      vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+      vec4 x12 = x0.xyxy + C.xxzz;
+      x12.xy -= i1;
+      i = mod(i, 289.0);
+      vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+      vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+      m = m * m;
+      m = m * m;
+      vec3 x = 2.0 * fract(p * C.www) - 1.0;
+      vec3 h = abs(x) - 0.5;
+      vec3 ox = floor(x + 0.5);
+      vec3 a0 = x - ox;
+      m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+      vec3 g;
+      g.x  = a0.x  * x0.x  + h.x  * x0.y;
+      g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+      return 130.0 * dot(m, g);
     }
 
     void main() {
-      float px = 1.0 / min(uResolution.x, uResolution.y);
-      vec2 p = (gl_FragCoord.xy - 0.5 * uResolution.xy) * px;
-      float cr = cos(uRotation), sr = sin(uRotation);
-      p = mat2(cr, -sr, sr, cr) * p;
-      p -= uMouse * uMouseInfluence;
-      float sc = mix(1.0, uHoverScale, uHoverAmount) + uBurst * 0.3;
-      p /= sc;
-      vec3 c = vec3(0.0);
-      float rcf = max(float(uRingCount) - 1.0, 1.0);
-      for (int i = 0; i < 10; i++) {
-        if (i >= uRingCount) break;
-        float fi = float(i);
-        vec2 pr = p - fi * uParallax * uMouse;
-        vec3 rc = mix(uColor, uColorTwo, fi / rcf);
-        c = mix(c, rc, vec3(ring(pr, uBaseRadius + fi * uRadiusStep, pow(uRingGap, fi), i == 0 ? 0.0 : 2.95 * fi, px)));
+      vec2 uv = gl_FragCoord.xy / uResolution;
+
+      // 3-stop color ramp along x
+      vec3 rampColor;
+      if (uv.x < 0.5) {
+        rampColor = mix(uColorStop0, uColorStop1, uv.x * 2.0);
+      } else {
+        rampColor = mix(uColorStop1, uColorStop2, (uv.x - 0.5) * 2.0);
       }
-      c *= 1.0 + uBurst * 2.0;
-      float n = fract(sin(dot(gl_FragCoord.xy + uTime * 100.0, vec2(12.9898, 78.233))) * 43758.5453);
-      c += (n - 0.5) * uNoiseAmount;
-      gl_FragColor = vec4(c, max(c.r, max(c.g, c.b)) * uOpacity);
+
+      float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
+      height = exp(height);
+      height = (uv.y * 2.0 - height + 0.2);
+      float intensity = 0.6 * height;
+
+      float midPoint = 0.20;
+      float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
+
+      vec3 auroraColor = intensity * rampColor;
+
+      gl_FragColor = vec4(auroraColor * auroraAlpha, auroraAlpha);
     }
   `;
 
+  // Blue/cyan/green aurora palette (matches landing theme, no purple)
+  const c0 = new THREE.Color('#00d4ff'); // cyan
+  const c1 = new THREE.Color('#10b981'); // green
+  const c2 = new THREE.Color('#0ea5e9'); // blue
+
   const uniforms = {
     uTime: { value: 0 },
-    uAttenuation: { value: 10 },
+    uAmplitude: { value: 1.0 },
+    uBlend: { value: 0.5 },
     uResolution: { value: new THREE.Vector2() },
-    uColor: { value: new THREE.Color('#00d4ff') },
-    uColorTwo: { value: new THREE.Color('#0066ff') },
-    uLineThickness: { value: 2 },
-    uBaseRadius: { value: 0.25 },
-    uRadiusStep: { value: 0.08 },
-    uScaleRate: { value: 0.1 },
-    uRingCount: { value: 7 },
-    uOpacity: { value: 0.85 },
-    uNoiseAmount: { value: 0.08 },
-    uRotation: { value: 0 },
-    uRingGap: { value: 1.5 },
-    uFadeIn: { value: 0.7 },
-    uFadeOut: { value: 0.5 },
-    uMouse: { value: new THREE.Vector2() },
-    uMouseInfluence: { value: 0.15 },
-    uHoverAmount: { value: 0 },
-    uHoverScale: { value: 1.15 },
-    uParallax: { value: 0.04 },
-    uBurst: { value: 0 },
+    uColorStop0: { value: new THREE.Vector3(c0.r, c0.g, c0.b) },
+    uColorStop1: { value: new THREE.Vector3(c1.r, c1.g, c1.b) },
+    uColorStop2: { value: new THREE.Vector3(c2.r, c2.g, c2.b) },
   };
 
-  const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true });
+  const material = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms,
+    transparent: true,
+    blending: THREE.NormalBlending,
+  });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
   scene.add(quad);
-
-  const smoothMouse = [0, 0];
-  const rawMouse = [0, 0];
-  let hovered = false;
-  let hoverAmt = 0;
-  let burst = 0;
 
   function resize() {
     const w = mount.clientWidth;
@@ -1608,30 +1606,153 @@ p { margin-bottom: 12px; }
   resize();
   window.addEventListener('resize', resize);
 
-  mount.addEventListener('mousemove', function(e) {
-    const r = mount.getBoundingClientRect();
-    rawMouse[0] = (e.clientX - r.left) / r.width - 0.5;
-    rawMouse[1] = -((e.clientY - r.top) / r.height - 0.5);
-  });
-  mount.addEventListener('mouseenter', function() { hovered = true; });
-  mount.addEventListener('mouseleave', function() { hovered = false; rawMouse[0] = 0; rawMouse[1] = 0; });
-  mount.addEventListener('click', function() { burst = 1; });
-
+  const speed = 0.5;
   function animate(t) {
     requestAnimationFrame(animate);
-    smoothMouse[0] += (rawMouse[0] - smoothMouse[0]) * 0.08;
-    smoothMouse[1] += (rawMouse[1] - smoothMouse[1]) * 0.08;
-    hoverAmt += ((hovered ? 1 : 0) - hoverAmt) * 0.08;
-    burst *= 0.95;
-    if (burst < 0.001) burst = 0;
-
-    uniforms.uTime.value = t * 0.001;
-    uniforms.uMouse.value.set(smoothMouse[0], smoothMouse[1]);
-    uniforms.uHoverAmount.value = hoverAmt;
-    uniforms.uBurst.value = burst;
+    uniforms.uTime.value = t * 0.001 * speed;
     renderer.render(scene, camera);
   }
   requestAnimationFrame(animate);
+})();
+
+
+// ════════════════════════════════════════════════════════
+// 1b. ELECTRIC BORDER — Canvas-based animated border (ReactBits)
+// ════════════════════════════════════════════════════════
+(function initElectricBorders() {
+  function random(x) {
+    return (Math.sin(x * 12.9898) * 43758.5453) % 1;
+  }
+  function noise2D(x, y) {
+    const i = Math.floor(x), j = Math.floor(y);
+    const fx = x - i, fy = y - j;
+    const a = random(i + j * 57);
+    const b = random(i + 1 + j * 57);
+    const c = random(i + (j + 1) * 57);
+    const d = random(i + 1 + (j + 1) * 57);
+    const ux = fx * fx * (3.0 - 2.0 * fx);
+    const uy = fy * fy * (3.0 - 2.0 * fy);
+    return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
+  }
+  function octavedNoise(x, octaves, lacunarity, gain, baseAmp, baseFreq, time, seed, baseFlat) {
+    let y = 0, amp = baseAmp, freq = baseFreq;
+    for (let i = 0; i < octaves; i++) {
+      let oa = amp;
+      if (i === 0) oa *= baseFlat;
+      y += oa * noise2D(freq * x + seed * 100, time * freq * 0.3);
+      freq *= lacunarity;
+      amp *= gain;
+    }
+    return y;
+  }
+  function getCornerPoint(cx, cy, r, start, arc, t) {
+    const a = start + t * arc;
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  }
+  function getRoundedRectPoint(t, left, top, w, h, r) {
+    const sw = w - 2 * r, sh = h - 2 * r;
+    const ca = (Math.PI * r) / 2;
+    const total = 2 * sw + 2 * sh + 4 * ca;
+    const d = t * total;
+    let acc = 0;
+    if (d <= acc + sw) return { x: left + r + ((d - acc) / sw) * sw, y: top };
+    acc += sw;
+    if (d <= acc + ca) return getCornerPoint(left + w - r, top + r, r, -Math.PI / 2, Math.PI / 2, (d - acc) / ca);
+    acc += ca;
+    if (d <= acc + sh) return { x: left + w, y: top + r + ((d - acc) / sh) * sh };
+    acc += sh;
+    if (d <= acc + ca) return getCornerPoint(left + w - r, top + h - r, r, 0, Math.PI / 2, (d - acc) / ca);
+    acc += ca;
+    if (d <= acc + sw) return { x: left + w - r - ((d - acc) / sw) * sw, y: top + h };
+    acc += sw;
+    if (d <= acc + ca) return getCornerPoint(left + r, top + h - r, r, Math.PI / 2, Math.PI / 2, (d - acc) / ca);
+    acc += ca;
+    if (d <= acc + sh) return { x: left, y: top + h - r - ((d - acc) / sh) * sh };
+    acc += sh;
+    return getCornerPoint(left + r, top + r, r, Math.PI, Math.PI / 2, (d - acc) / ca);
+  }
+
+  function setupBorder(container) {
+    const canvas = container.querySelector('.eb-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const color = container.dataset.electricColor || '#7df9ff';
+    const speed = parseFloat(container.dataset.electricSpeed || '1');
+    const chaos = parseFloat(container.dataset.electricChaos || '0.12');
+    const borderRadius = parseFloat(container.dataset.electricRadius || '16');
+
+    // CSS custom properties for glow layers
+    container.style.setProperty('--electric-border-color', color);
+    container.style.setProperty('--electric-light-color', color);
+    container.style.borderRadius = borderRadius + 'px';
+
+    const octaves = 10, lacunarity = 1.6, gain = 0.7;
+    const amplitude = chaos, frequency = 10, baseFlatness = 0;
+    const displacement = 60, borderOffset = 60;
+
+    let time = 0, lastT = 0, width = 0, height = 0;
+
+    function updateSize() {
+      const rect = container.getBoundingClientRect();
+      width = rect.width + borderOffset * 2;
+      height = rect.height + borderOffset * 2;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    }
+    updateSize();
+
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(container);
+
+    function draw(t) {
+      const dt = (t - lastT) / 1000;
+      time += dt * speed;
+      lastT = t;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(dpr, dpr);
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const left = borderOffset, top = borderOffset;
+      const bw = width - 2 * borderOffset, bh = height - 2 * borderOffset;
+      if (bw <= 0 || bh <= 0) {
+        requestAnimationFrame(draw);
+        return;
+      }
+      const maxR = Math.min(bw, bh) / 2;
+      const r = Math.min(borderRadius, maxR);
+      const perim = 2 * (bw + bh) + 2 * Math.PI * r;
+      const samples = Math.floor(perim / 2);
+
+      ctx.beginPath();
+      for (let i = 0; i <= samples; i++) {
+        const p = i / samples;
+        const pt = getRoundedRectPoint(p, left, top, bw, bh, r);
+        const xN = octavedNoise(p * 8, octaves, lacunarity, gain, amplitude, frequency, time, 0, baseFlatness);
+        const yN = octavedNoise(p * 8, octaves, lacunarity, gain, amplitude, frequency, time, 1, baseFlatness);
+        const dx = pt.x + xN * displacement;
+        const dy = pt.y + yN * displacement;
+        if (i === 0) ctx.moveTo(dx, dy); else ctx.lineTo(dx, dy);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  document.querySelectorAll('.electric-border').forEach(setupBorder);
 })();
 
 
@@ -1717,155 +1838,596 @@ p { margin-bottom: 12px; }
 
 
 // ════════════════════════════════════════════════════════
-// 4. TARGET CURSOR — GSAP-powered custom cursor
+// 4. SPLASH CURSOR — WebGL fluid simulation (ReactBits)
 // ════════════════════════════════════════════════════════
-(function initTargetCursor() {
-  // Skip on mobile
-  var hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  var isSmallScreen = window.innerWidth <= 768;
-  if (hasTouchScreen && isSmallScreen) return;
+(function initSplashCursor() {
+  // Skip on mobile for performance
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isSmall = window.innerWidth <= 768;
+  if (hasTouch && isSmall) return;
 
-  var cursor = document.getElementById('targetCursor');
-  var dot = document.getElementById('cursorDot');
-  var corners = cursor.querySelectorAll('.target-cursor-corner');
-  var targetSelector = '.cursor-target';
-  var spinDuration = 2;
-  var cornerSize = 12;
-  var borderWidth = 3;
+  // Create overlay container + canvas
+  const container = document.createElement('div');
+  container.className = 'splash-cursor-container';
+  const canvas = document.createElement('canvas');
+  canvas.id = 'fluid';
+  container.appendChild(canvas);
+  document.body.appendChild(container);
 
-  document.body.style.cursor = 'none';
+  // Config — reduced SPLAT_RADIUS for smaller animation
+  const config = {
+    SIM_RESOLUTION: 128,
+    DYE_RESOLUTION: 1024,
+    DENSITY_DISSIPATION: 4.0,
+    VELOCITY_DISSIPATION: 2.5,
+    PRESSURE: 0.1,
+    PRESSURE_ITERATIONS: 20,
+    CURL: 3,
+    SPLAT_RADIUS: 0.12,
+    SPLAT_FORCE: 4500,
+    SHADING: true,
+    COLOR_UPDATE_SPEED: 10,
+    PAUSED: false,
+    BACK_COLOR: { r: 0, g: 0, b: 0 },
+    TRANSPARENT: true,
+    RAINBOW_MODE: true,
+    COLOR: '#00d4ff'
+  };
 
-  // Add cursor:none to interactive elements, but NOT inside .hero
-  var style = document.createElement('style');
-  style.textContent = 'a,button,.cta,.card,.cursor-target,.faq-item,.tool-item,.author-link,.author-photo,.req-card,.format-orb{cursor:none!important}.hero,.hero *{cursor:auto!important}';
-  document.head.appendChild(style);
+  function pointerPrototype() {
+    this.id = -1;
+    this.texcoordX = 0; this.texcoordY = 0;
+    this.prevTexcoordX = 0; this.prevTexcoordY = 0;
+    this.deltaX = 0; this.deltaY = 0;
+    this.down = false; this.moved = false;
+    this.color = [0, 0, 0];
+  }
+  const pointers = [new pointerPrototype()];
 
-  // Hide custom cursor when inside Hero section
-  var heroEl = document.querySelector('.hero');
-  var cursorHidden = false;
-  heroEl.addEventListener('mouseenter', function() {
-    cursorHidden = true;
-    gsap.to(cursor, { opacity: 0, duration: 0.15 });
-  });
-  heroEl.addEventListener('mouseleave', function() {
-    cursorHidden = false;
-    gsap.to(cursor, { opacity: 1, duration: 0.15 });
-  });
-
-  gsap.set(cursor, {
-    xPercent: -50, yPercent: -50,
-    x: window.innerWidth / 2, y: window.innerHeight / 2
-  });
-
-  var spinTl = gsap.timeline({ repeat: -1 })
-    .to(cursor, { rotation: '+=360', duration: spinDuration, ease: 'none' });
-
-  var activeTarget = null;
-  var currentLeaveHandler = null;
-  var activeStrength = { current: 0 };
-  var targetCornerPositions = null;
-
-  function tickerFn() {
-    if (!targetCornerPositions) return;
-    var strength = activeStrength.current;
-    if (strength === 0) return;
-
-    var cx = gsap.getProperty(cursor, 'x');
-    var cy = gsap.getProperty(cursor, 'y');
-
-    corners.forEach(function(corner, i) {
-      var curX = gsap.getProperty(corner, 'x');
-      var curY = gsap.getProperty(corner, 'y');
-      var tx = targetCornerPositions[i].x - cx;
-      var ty = targetCornerPositions[i].y - cy;
-      var fx = curX + (tx - curX) * strength;
-      var fy = curY + (ty - curY) * strength;
-      var dur = strength >= 0.99 ? 0.2 : 0.05;
-      gsap.to(corner, { x: fx, y: fy, duration: dur, ease: dur === 0 ? 'none' : 'power1.out', overwrite: 'auto' });
-    });
+  // WebGL setup
+  function getWebGLContext(canvas) {
+    const params = { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false };
+    let gl = canvas.getContext('webgl2', params);
+    const isWebGL2 = !!gl;
+    if (!isWebGL2) gl = canvas.getContext('webgl', params) || canvas.getContext('experimental-webgl', params);
+    let halfFloat, supportLinearFiltering;
+    if (isWebGL2) {
+      gl.getExtension('EXT_color_buffer_float');
+      supportLinearFiltering = gl.getExtension('OES_texture_float_linear');
+    } else {
+      halfFloat = gl.getExtension('OES_texture_half_float');
+      supportLinearFiltering = gl.getExtension('OES_texture_half_float_linear');
+    }
+    gl.clearColor(0, 0, 0, 1);
+    const halfFloatTexType = isWebGL2 ? gl.HALF_FLOAT : halfFloat && halfFloat.HALF_FLOAT_OES;
+    let formatRGBA, formatRG, formatR;
+    if (isWebGL2) {
+      formatRGBA = getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, halfFloatTexType);
+      formatRG = getSupportedFormat(gl, gl.RG16F, gl.RG, halfFloatTexType);
+      formatR = getSupportedFormat(gl, gl.R16F, gl.RED, halfFloatTexType);
+    } else {
+      formatRGBA = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+      formatRG = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+      formatR = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+    }
+    return { gl, ext: { formatRGBA, formatRG, formatR, halfFloatTexType, supportLinearFiltering } };
+  }
+  function getSupportedFormat(gl, internalFormat, format, type) {
+    if (!supportRenderTextureFormat(gl, internalFormat, format, type)) {
+      switch (internalFormat) {
+        case gl.R16F: return getSupportedFormat(gl, gl.RG16F, gl.RG, type);
+        case gl.RG16F: return getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, type);
+        default: return null;
+      }
+    }
+    return { internalFormat, format };
+  }
+  function supportRenderTextureFormat(gl, internalFormat, format, type) {
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, 4, 4, 0, format, type, null);
+    const fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    return gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
   }
 
-  window.addEventListener('mousemove', function(e) {
-    gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1, ease: 'power3.out' });
-  });
+  const { gl, ext } = getWebGLContext(canvas);
+  if (!ext.supportLinearFiltering) {
+    config.DYE_RESOLUTION = 256;
+    config.SHADING = false;
+  }
 
-  window.addEventListener('mousedown', function() {
-    gsap.to(dot, { scale: 0.7, duration: 0.3 });
-    gsap.to(cursor, { scale: 0.9, duration: 0.2 });
-  });
+  class Material {
+    constructor(vs, fsSrc) { this.vs = vs; this.fsSrc = fsSrc; this.programs = []; this.activeProgram = null; this.uniforms = []; }
+    setKeywords(kw) {
+      let hash = 0;
+      for (let i = 0; i < kw.length; i++) hash += hashCode(kw[i]);
+      let program = this.programs[hash];
+      if (program == null) {
+        const fs = compileShader(gl.FRAGMENT_SHADER, this.fsSrc, kw);
+        program = createProgram(this.vs, fs);
+        this.programs[hash] = program;
+      }
+      if (program === this.activeProgram) return;
+      this.uniforms = getUniforms(program);
+      this.activeProgram = program;
+    }
+    bind() { gl.useProgram(this.activeProgram); }
+  }
+  class Prog {
+    constructor(vs, fs) { this.program = createProgram(vs, fs); this.uniforms = getUniforms(this.program); }
+    bind() { gl.useProgram(this.program); }
+  }
+  function createProgram(vs, fs) {
+    const p = gl.createProgram();
+    gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) console.trace(gl.getProgramInfoLog(p));
+    return p;
+  }
+  function getUniforms(p) {
+    const u = []; const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < n; i++) { const name = gl.getActiveUniform(p, i).name; u[name] = gl.getUniformLocation(p, name); }
+    return u;
+  }
+  function compileShader(type, src, kw) {
+    src = addKeywords(src, kw);
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.trace(gl.getShaderInfoLog(s));
+    return s;
+  }
+  function addKeywords(src, kw) { if (!kw) return src; let k = ''; kw.forEach(x => { k += '#define ' + x + '\n'; }); return k + src; }
 
-  window.addEventListener('mouseup', function() {
-    gsap.to(dot, { scale: 1, duration: 0.3 });
-    gsap.to(cursor, { scale: 1, duration: 0.2 });
-  });
+  const baseVS = compileShader(gl.VERTEX_SHADER, `
+    precision highp float;
+    attribute vec2 aPosition;
+    varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB;
+    uniform vec2 texelSize;
+    void main () {
+      vUv = aPosition * 0.5 + 0.5;
+      vL = vUv - vec2(texelSize.x, 0.0);
+      vR = vUv + vec2(texelSize.x, 0.0);
+      vT = vUv + vec2(0.0, texelSize.y);
+      vB = vUv - vec2(0.0, texelSize.y);
+      gl_Position = vec4(aPosition, 0.0, 1.0);
+    }
+  `);
+  const copyFS = compileShader(gl.FRAGMENT_SHADER, `
+    precision mediump float; precision mediump sampler2D;
+    varying highp vec2 vUv; uniform sampler2D uTexture;
+    void main () { gl_FragColor = texture2D(uTexture, vUv); }
+  `);
+  const clearFS = compileShader(gl.FRAGMENT_SHADER, `
+    precision mediump float; precision mediump sampler2D;
+    varying highp vec2 vUv; uniform sampler2D uTexture; uniform float value;
+    void main () { gl_FragColor = value * texture2D(uTexture, vUv); }
+  `);
+  const displayFSSrc = `
+    precision highp float; precision highp sampler2D;
+    varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB;
+    uniform sampler2D uTexture; uniform vec2 texelSize;
+    void main () {
+      vec3 c = texture2D(uTexture, vUv).rgb;
+      #ifdef SHADING
+        vec3 lc = texture2D(uTexture, vL).rgb;
+        vec3 rc = texture2D(uTexture, vR).rgb;
+        vec3 tc = texture2D(uTexture, vT).rgb;
+        vec3 bc = texture2D(uTexture, vB).rgb;
+        float dx = length(rc) - length(lc);
+        float dy = length(tc) - length(bc);
+        vec3 n = normalize(vec3(dx, dy, length(texelSize)));
+        vec3 l = vec3(0.0, 0.0, 1.0);
+        float diffuse = clamp(dot(n, l) + 0.7, 0.7, 1.0);
+        c *= diffuse;
+      #endif
+      float a = max(c.r, max(c.g, c.b));
+      gl_FragColor = vec4(c, a);
+    }
+  `;
+  const splatFS = compileShader(gl.FRAGMENT_SHADER, `
+    precision highp float; precision highp sampler2D;
+    varying vec2 vUv; uniform sampler2D uTarget; uniform float aspectRatio;
+    uniform vec3 color; uniform vec2 point; uniform float radius;
+    void main () {
+      vec2 p = vUv - point.xy; p.x *= aspectRatio;
+      vec3 splat = exp(-dot(p, p) / radius) * color;
+      vec3 base = texture2D(uTarget, vUv).xyz;
+      gl_FragColor = vec4(base + splat, 1.0);
+    }
+  `);
+  const advectionFS = compileShader(gl.FRAGMENT_SHADER, `
+    precision highp float; precision highp sampler2D;
+    varying vec2 vUv; uniform sampler2D uVelocity; uniform sampler2D uSource;
+    uniform vec2 texelSize; uniform vec2 dyeTexelSize; uniform float dt; uniform float dissipation;
+    vec4 bilerp (sampler2D s, vec2 uv, vec2 ts) {
+      vec2 st = uv / ts - 0.5; vec2 iuv = floor(st); vec2 fuv = fract(st);
+      vec4 a = texture2D(s, (iuv + vec2(0.5, 0.5)) * ts);
+      vec4 b = texture2D(s, (iuv + vec2(1.5, 0.5)) * ts);
+      vec4 c = texture2D(s, (iuv + vec2(0.5, 1.5)) * ts);
+      vec4 d = texture2D(s, (iuv + vec2(1.5, 1.5)) * ts);
+      return mix(mix(a, b, fuv.x), mix(c, d, fuv.x), fuv.y);
+    }
+    void main () {
+      #ifdef MANUAL_FILTERING
+        vec2 coord = vUv - dt * bilerp(uVelocity, vUv, texelSize).xy * texelSize;
+        vec4 result = bilerp(uSource, coord, dyeTexelSize);
+      #else
+        vec2 coord = vUv - dt * texture2D(uVelocity, vUv).xy * texelSize;
+        vec4 result = texture2D(uSource, coord);
+      #endif
+      float decay = 1.0 + dissipation * dt;
+      gl_FragColor = result / decay;
+    }
+  `, ext.supportLinearFiltering ? null : ['MANUAL_FILTERING']);
+  const divergenceFS = compileShader(gl.FRAGMENT_SHADER, `
+    precision mediump float; precision mediump sampler2D;
+    varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB;
+    uniform sampler2D uVelocity;
+    void main () {
+      float L = texture2D(uVelocity, vL).x;
+      float R = texture2D(uVelocity, vR).x;
+      float T = texture2D(uVelocity, vT).y;
+      float B = texture2D(uVelocity, vB).y;
+      vec2 C = texture2D(uVelocity, vUv).xy;
+      if (vL.x < 0.0) L = -C.x;
+      if (vR.x > 1.0) R = -C.x;
+      if (vT.y > 1.0) T = -C.y;
+      if (vB.y < 0.0) B = -C.y;
+      float div = 0.5 * (R - L + T - B);
+      gl_FragColor = vec4(div, 0.0, 0.0, 1.0);
+    }
+  `);
+  const curlFS = compileShader(gl.FRAGMENT_SHADER, `
+    precision mediump float; precision mediump sampler2D;
+    varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB;
+    uniform sampler2D uVelocity;
+    void main () {
+      float L = texture2D(uVelocity, vL).y;
+      float R = texture2D(uVelocity, vR).y;
+      float T = texture2D(uVelocity, vT).x;
+      float B = texture2D(uVelocity, vB).x;
+      float vorticity = R - L - T + B;
+      gl_FragColor = vec4(0.5 * vorticity, 0.0, 0.0, 1.0);
+    }
+  `);
+  const vorticityFS = compileShader(gl.FRAGMENT_SHADER, `
+    precision highp float; precision highp sampler2D;
+    varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB;
+    uniform sampler2D uVelocity; uniform sampler2D uCurl; uniform float curl; uniform float dt;
+    void main () {
+      float L = texture2D(uCurl, vL).x;
+      float R = texture2D(uCurl, vR).x;
+      float T = texture2D(uCurl, vT).x;
+      float B = texture2D(uCurl, vB).x;
+      float C = texture2D(uCurl, vUv).x;
+      vec2 force = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L));
+      force /= length(force) + 0.0001;
+      force *= curl * C;
+      force.y *= -1.0;
+      vec2 velocity = texture2D(uVelocity, vUv).xy;
+      velocity += force * dt;
+      velocity = min(max(velocity, -1000.0), 1000.0);
+      gl_FragColor = vec4(velocity, 0.0, 1.0);
+    }
+  `);
+  const pressureFS = compileShader(gl.FRAGMENT_SHADER, `
+    precision mediump float; precision mediump sampler2D;
+    varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB;
+    uniform sampler2D uPressure; uniform sampler2D uDivergence;
+    void main () {
+      float L = texture2D(uPressure, vL).x;
+      float R = texture2D(uPressure, vR).x;
+      float T = texture2D(uPressure, vT).x;
+      float B = texture2D(uPressure, vB).x;
+      float C = texture2D(uPressure, vUv).x;
+      float divergence = texture2D(uDivergence, vUv).x;
+      float pressure = (L + R + B + T - divergence) * 0.25;
+      gl_FragColor = vec4(pressure, 0.0, 0.0, 1.0);
+    }
+  `);
+  const gradientSubtractFS = compileShader(gl.FRAGMENT_SHADER, `
+    precision mediump float; precision mediump sampler2D;
+    varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB;
+    uniform sampler2D uPressure; uniform sampler2D uVelocity;
+    void main () {
+      float L = texture2D(uPressure, vL).x;
+      float R = texture2D(uPressure, vR).x;
+      float T = texture2D(uPressure, vT).x;
+      float B = texture2D(uPressure, vB).x;
+      vec2 velocity = texture2D(uVelocity, vUv).xy;
+      velocity.xy -= vec2(R - L, T - B);
+      gl_FragColor = vec4(velocity, 0.0, 1.0);
+    }
+  `);
 
-  window.addEventListener('mouseover', function(e) {
-    var target = e.target.closest(targetSelector);
-    if (!target || activeTarget === target) return;
+  const blit = (() => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(0);
+    return (target, clear = false) => {
+      if (target == null) { gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight); gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+      else { gl.viewport(0, 0, target.width, target.height); gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo); }
+      if (clear) { gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT); }
+      gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+    };
+  })();
 
-    if (activeTarget && currentLeaveHandler) {
-      activeTarget.removeEventListener('mouseleave', currentLeaveHandler);
+  let dye, velocity, divergence, curl, pressure;
+  const copyProgram = new Prog(baseVS, copyFS);
+  const clearProgram = new Prog(baseVS, clearFS);
+  const splatProgram = new Prog(baseVS, splatFS);
+  const advectionProgram = new Prog(baseVS, advectionFS);
+  const divergenceProgram = new Prog(baseVS, divergenceFS);
+  const curlProgram = new Prog(baseVS, curlFS);
+  const vorticityProgram = new Prog(baseVS, vorticityFS);
+  const gradientSubtractProgram = new Prog(baseVS, gradientSubtractFS);
+  const displayMaterial = new Material(baseVS, displayFSSrc);
+
+  function initFramebuffers() {
+    const simRes = getResolution(config.SIM_RESOLUTION);
+    const dyeRes = getResolution(config.DYE_RESOLUTION);
+    const texType = ext.halfFloatTexType;
+    const rgba = ext.formatRGBA, rg = ext.formatRG, r = ext.formatR;
+    const filtering = ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
+    gl.disable(gl.BLEND);
+    if (!dye) dye = createDoubleFBO(dyeRes.width, dyeRes.height, rgba.internalFormat, rgba.format, texType, filtering);
+    else dye = resizeDoubleFBO(dye, dyeRes.width, dyeRes.height, rgba.internalFormat, rgba.format, texType, filtering);
+    if (!velocity) velocity = createDoubleFBO(simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
+    else velocity = resizeDoubleFBO(velocity, simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
+    divergence = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
+    curl = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
+    pressure = createDoubleFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
+  }
+  function createFBO(w, h, internalFormat, format, type, param) {
+    gl.activeTexture(gl.TEXTURE0);
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, param);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, param);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null);
+    const fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    gl.viewport(0, 0, w, h);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    return { texture: tex, fbo, width: w, height: h, texelSizeX: 1.0 / w, texelSizeY: 1.0 / h,
+      attach(id) { gl.activeTexture(gl.TEXTURE0 + id); gl.bindTexture(gl.TEXTURE_2D, tex); return id; } };
+  }
+  function createDoubleFBO(w, h, internalFormat, format, type, param) {
+    let f1 = createFBO(w, h, internalFormat, format, type, param);
+    let f2 = createFBO(w, h, internalFormat, format, type, param);
+    return {
+      width: w, height: h, texelSizeX: f1.texelSizeX, texelSizeY: f1.texelSizeY,
+      get read() { return f1; }, set read(v) { f1 = v; },
+      get write() { return f2; }, set write(v) { f2 = v; },
+      swap() { const t = f1; f1 = f2; f2 = t; }
+    };
+  }
+  function resizeFBO(target, w, h, internalFormat, format, type, param) {
+    const n = createFBO(w, h, internalFormat, format, type, param);
+    copyProgram.bind();
+    gl.uniform1i(copyProgram.uniforms.uTexture, target.attach(0));
+    blit(n);
+    return n;
+  }
+  function resizeDoubleFBO(target, w, h, internalFormat, format, type, param) {
+    if (target.width === w && target.height === h) return target;
+    target.read = resizeFBO(target.read, w, h, internalFormat, format, type, param);
+    target.write = createFBO(w, h, internalFormat, format, type, param);
+    target.width = w; target.height = h;
+    target.texelSizeX = 1.0 / w; target.texelSizeY = 1.0 / h;
+    return target;
+  }
+  function updateKeywords() {
+    const kw = [];
+    if (config.SHADING) kw.push('SHADING');
+    displayMaterial.setKeywords(kw);
+  }
+  updateKeywords();
+  initFramebuffers();
+
+  let lastUpdateTime = Date.now();
+  let colorUpdateTimer = 0;
+
+  function updateFrame() {
+    const dt = calcDeltaTime();
+    if (resizeCanvas()) initFramebuffers();
+    updateColors(dt);
+    applyInputs();
+    step(dt);
+    render(null);
+    requestAnimationFrame(updateFrame);
+  }
+  function calcDeltaTime() { const now = Date.now(); let dt = (now - lastUpdateTime) / 1000; dt = Math.min(dt, 0.016666); lastUpdateTime = now; return dt; }
+  function resizeCanvas() {
+    const w = scaleByPixelRatio(canvas.clientWidth);
+    const h = scaleByPixelRatio(canvas.clientHeight);
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; return true; }
+    return false;
+  }
+  function updateColors(dt) {
+    colorUpdateTimer += dt * config.COLOR_UPDATE_SPEED;
+    if (colorUpdateTimer >= 1) {
+      colorUpdateTimer = wrap(colorUpdateTimer, 0, 1);
+      pointers.forEach(p => { p.color = generateColor(); });
+    }
+  }
+  function applyInputs() { pointers.forEach(p => { if (p.moved) { p.moved = false; splatPointer(p); } }); }
+  function step(dt) {
+    gl.disable(gl.BLEND);
+    curlProgram.bind();
+    gl.uniform2f(curlProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    gl.uniform1i(curlProgram.uniforms.uVelocity, velocity.read.attach(0));
+    blit(curl);
+
+    vorticityProgram.bind();
+    gl.uniform2f(vorticityProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    gl.uniform1i(vorticityProgram.uniforms.uVelocity, velocity.read.attach(0));
+    gl.uniform1i(vorticityProgram.uniforms.uCurl, curl.attach(1));
+    gl.uniform1f(vorticityProgram.uniforms.curl, config.CURL);
+    gl.uniform1f(vorticityProgram.uniforms.dt, dt);
+    blit(velocity.write); velocity.swap();
+
+    divergenceProgram.bind();
+    gl.uniform2f(divergenceProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    gl.uniform1i(divergenceProgram.uniforms.uVelocity, velocity.read.attach(0));
+    blit(divergence);
+
+    clearProgram.bind();
+    gl.uniform1i(clearProgram.uniforms.uTexture, pressure.read.attach(0));
+    gl.uniform1f(clearProgram.uniforms.value, config.PRESSURE);
+    blit(pressure.write); pressure.swap();
+
+    // pressure iterations
+    const pressureProgram = new Prog(baseVS, pressureFS);
+    pressureProgram.bind();
+    gl.uniform2f(pressureProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    gl.uniform1i(pressureProgram.uniforms.uDivergence, divergence.attach(0));
+    for (let i = 0; i < config.PRESSURE_ITERATIONS; i++) {
+      gl.uniform1i(pressureProgram.uniforms.uPressure, pressure.read.attach(1));
+      blit(pressure.write); pressure.swap();
     }
 
-    activeTarget = target;
-    corners.forEach(function(c) { gsap.killTweensOf(c); });
-    gsap.killTweensOf(cursor, 'rotation');
-    spinTl.pause();
-    gsap.set(cursor, { rotation: 0 });
+    gradientSubtractProgram.bind();
+    gl.uniform2f(gradientSubtractProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    gl.uniform1i(gradientSubtractProgram.uniforms.uPressure, pressure.read.attach(0));
+    gl.uniform1i(gradientSubtractProgram.uniforms.uVelocity, velocity.read.attach(1));
+    blit(velocity.write); velocity.swap();
 
-    var rect = target.getBoundingClientRect();
-    var cx = gsap.getProperty(cursor, 'x');
-    var cy = gsap.getProperty(cursor, 'y');
+    advectionProgram.bind();
+    gl.uniform2f(advectionProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    if (!ext.supportLinearFiltering) gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, velocity.texelSizeX, velocity.texelSizeY);
+    const vId = velocity.read.attach(0);
+    gl.uniform1i(advectionProgram.uniforms.uVelocity, vId);
+    gl.uniform1i(advectionProgram.uniforms.uSource, vId);
+    gl.uniform1f(advectionProgram.uniforms.dt, dt);
+    gl.uniform1f(advectionProgram.uniforms.dissipation, config.VELOCITY_DISSIPATION);
+    blit(velocity.write); velocity.swap();
 
-    targetCornerPositions = [
-      { x: rect.left - borderWidth, y: rect.top - borderWidth },
-      { x: rect.right + borderWidth - cornerSize, y: rect.top - borderWidth },
-      { x: rect.right + borderWidth - cornerSize, y: rect.bottom + borderWidth - cornerSize },
-      { x: rect.left - borderWidth, y: rect.bottom + borderWidth - cornerSize }
-    ];
+    if (!ext.supportLinearFiltering) gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, dye.texelSizeX, dye.texelSizeY);
+    gl.uniform1i(advectionProgram.uniforms.uVelocity, velocity.read.attach(0));
+    gl.uniform1i(advectionProgram.uniforms.uSource, dye.read.attach(1));
+    gl.uniform1f(advectionProgram.uniforms.dissipation, config.DENSITY_DISSIPATION);
+    blit(dye.write); dye.swap();
+  }
+  function render(target) {
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.enable(gl.BLEND);
+    const w = target == null ? gl.drawingBufferWidth : target.width;
+    const h = target == null ? gl.drawingBufferHeight : target.height;
+    displayMaterial.bind();
+    if (config.SHADING) gl.uniform2f(displayMaterial.uniforms.texelSize, 1 / w, 1 / h);
+    gl.uniform1i(displayMaterial.uniforms.uTexture, dye.read.attach(0));
+    blit(target);
+  }
+  function splatPointer(p) {
+    const dx = p.deltaX * config.SPLAT_FORCE;
+    const dy = p.deltaY * config.SPLAT_FORCE;
+    splat(p.texcoordX, p.texcoordY, dx, dy, p.color);
+  }
+  function clickSplat(p) {
+    const c = generateColor();
+    c.r *= 10; c.g *= 10; c.b *= 10;
+    const dx = 10 * (Math.random() - 0.5);
+    const dy = 30 * (Math.random() - 0.5);
+    splat(p.texcoordX, p.texcoordY, dx, dy, c);
+  }
+  function splat(x, y, dx, dy, color) {
+    splatProgram.bind();
+    gl.uniform1i(splatProgram.uniforms.uTarget, velocity.read.attach(0));
+    gl.uniform1f(splatProgram.uniforms.aspectRatio, canvas.width / canvas.height);
+    gl.uniform2f(splatProgram.uniforms.point, x, y);
+    gl.uniform3f(splatProgram.uniforms.color, dx, dy, 0);
+    gl.uniform1f(splatProgram.uniforms.radius, correctRadius(config.SPLAT_RADIUS / 100));
+    blit(velocity.write); velocity.swap();
+    gl.uniform1i(splatProgram.uniforms.uTarget, dye.read.attach(0));
+    gl.uniform3f(splatProgram.uniforms.color, color.r, color.g, color.b);
+    blit(dye.write); dye.swap();
+  }
+  function correctRadius(r) { const a = canvas.width / canvas.height; if (a > 1) r *= a; return r; }
+  function updatePointerDown(p, id, x, y) {
+    p.id = id; p.down = true; p.moved = false;
+    p.texcoordX = x / canvas.width; p.texcoordY = 1 - y / canvas.height;
+    p.prevTexcoordX = p.texcoordX; p.prevTexcoordY = p.texcoordY;
+    p.deltaX = 0; p.deltaY = 0; p.color = generateColor();
+  }
+  function updatePointerMove(p, x, y, color) {
+    p.prevTexcoordX = p.texcoordX; p.prevTexcoordY = p.texcoordY;
+    p.texcoordX = x / canvas.width; p.texcoordY = 1 - y / canvas.height;
+    p.deltaX = correctDeltaX(p.texcoordX - p.prevTexcoordX);
+    p.deltaY = correctDeltaY(p.texcoordY - p.prevTexcoordY);
+    p.moved = Math.abs(p.deltaX) > 0 || Math.abs(p.deltaY) > 0;
+    p.color = color;
+  }
+  function correctDeltaX(d) { const a = canvas.width / canvas.height; if (a < 1) d *= a; return d; }
+  function correctDeltaY(d) { const a = canvas.width / canvas.height; if (a > 1) d /= a; return d; }
+  function generateColor() {
+    if (!config.RAINBOW_MODE) return hexToRGB(config.COLOR);
+    const c = HSVtoRGB(Math.random(), 1, 1);
+    c.r *= 0.15; c.g *= 0.15; c.b *= 0.15;
+    return c;
+  }
+  function hexToRGB(hex) {
+    let v = hex.replace('#', '');
+    if (v.length === 3) v = v[0] + v[0] + v[1] + v[1] + v[2] + v[2];
+    return { r: parseInt(v.slice(0, 2), 16) / 255 * 0.15, g: parseInt(v.slice(2, 4), 16) / 255 * 0.15, b: parseInt(v.slice(4, 6), 16) / 255 * 0.15 };
+  }
+  function HSVtoRGB(h, s, v) {
+    let r, g, b; const i = Math.floor(h * 6); const f = h * 6 - i;
+    const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+      case 0: r = v; g = t; b = p; break;
+      case 1: r = q; g = v; b = p; break;
+      case 2: r = p; g = v; b = t; break;
+      case 3: r = p; g = q; b = v; break;
+      case 4: r = t; g = p; b = v; break;
+      case 5: r = v; g = p; b = q; break;
+    }
+    return { r, g, b };
+  }
+  function wrap(value, min, max) { const r = max - min; return r === 0 ? min : ((value - min) % r) + min; }
+  function getResolution(res) {
+    let a = gl.drawingBufferWidth / gl.drawingBufferHeight;
+    if (a < 1) a = 1 / a;
+    const mi = Math.round(res), ma = Math.round(res * a);
+    return gl.drawingBufferWidth > gl.drawingBufferHeight ? { width: ma, height: mi } : { width: mi, height: ma };
+  }
+  function scaleByPixelRatio(x) { return Math.floor(x * (window.devicePixelRatio || 1)); }
+  function hashCode(s) { if (!s.length) return 0; let h = 0; for (let i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; } return h; }
 
-    gsap.ticker.add(tickerFn);
-    gsap.to(activeStrength, { current: 1, duration: 0.2, ease: 'power2.out' });
+  // Event listeners
+  let firstMove = false;
+  window.addEventListener('mousedown', e => {
+    const p = pointers[0];
+    updatePointerDown(p, -1, scaleByPixelRatio(e.clientX), scaleByPixelRatio(e.clientY));
+    clickSplat(p);
+  });
+  window.addEventListener('mousemove', e => {
+    const p = pointers[0];
+    const x = scaleByPixelRatio(e.clientX), y = scaleByPixelRatio(e.clientY);
+    if (!firstMove) { updatePointerMove(p, x, y, generateColor()); firstMove = true; }
+    else updatePointerMove(p, x, y, p.color);
+  });
+  window.addEventListener('touchstart', e => {
+    const t = e.targetTouches, p = pointers[0];
+    for (let i = 0; i < t.length; i++) updatePointerDown(p, t[i].identifier, scaleByPixelRatio(t[i].clientX), scaleByPixelRatio(t[i].clientY));
+  });
+  window.addEventListener('touchmove', e => {
+    const t = e.targetTouches, p = pointers[0];
+    for (let i = 0; i < t.length; i++) updatePointerMove(p, scaleByPixelRatio(t[i].clientX), scaleByPixelRatio(t[i].clientY), p.color);
+  }, false);
 
-    corners.forEach(function(corner, i) {
-      gsap.to(corner, {
-        x: targetCornerPositions[i].x - cx,
-        y: targetCornerPositions[i].y - cy,
-        duration: 0.2, ease: 'power2.out'
-      });
-    });
-
-    var leaveHandler = function() {
-      gsap.ticker.remove(tickerFn);
-      targetCornerPositions = null;
-      gsap.set(activeStrength, { current: 0, overwrite: true });
-      activeTarget = null;
-
-      var positions = [
-        { x: -cornerSize * 1.5, y: -cornerSize * 1.5 },
-        { x: cornerSize * 0.5, y: -cornerSize * 1.5 },
-        { x: cornerSize * 0.5, y: cornerSize * 0.5 },
-        { x: -cornerSize * 1.5, y: cornerSize * 0.5 }
-      ];
-      corners.forEach(function(corner, i) {
-        gsap.to(corner, { x: positions[i].x, y: positions[i].y, duration: 0.3, ease: 'power3.out' });
-      });
-
-      setTimeout(function() {
-        if (!activeTarget) {
-          spinTl.kill();
-          spinTl = gsap.timeline({ repeat: -1 })
-            .to(cursor, { rotation: '+=360', duration: spinDuration, ease: 'none' });
-        }
-      }, 50);
-
-      target.removeEventListener('mouseleave', leaveHandler);
-      currentLeaveHandler = null;
-    };
-
-    currentLeaveHandler = leaveHandler;
-    target.addEventListener('mouseleave', leaveHandler);
-  }, { passive: true });
+  updateFrame();
 })();
 
 
