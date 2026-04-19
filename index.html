@@ -302,12 +302,17 @@ p { margin-bottom: 12px; }
   position: relative;
   z-index: 2;
   text-align: center;
-  max-width: 720px;
+  max-width: 920px;
   padding: 0 24px;
 }
 
 .hero-content h1 {
   margin-bottom: 20px;
+}
+
+/* Keep each split-text line as one piece on desktop */
+@media (min-width: 768px) {
+  .split-line { white-space: nowrap; }
 }
 
 .launch-banner {
@@ -1774,6 +1779,11 @@ p { margin-bottom: 12px; }
       const lineText = tmp.textContent.trim();
       const words = lineText.split(/\s+/).filter(function(w) { return w.length > 0; });
 
+      // Wrap entire line in a .split-line container so it stays as one piece on desktop
+      const lineWrap = document.createElement('span');
+      lineWrap.className = 'split-line';
+      lineWrap.style.display = 'inline-block';
+
       words.forEach(function(word, wi) {
         const wordSpan = document.createElement('span');
         wordSpan.style.display = 'inline-block';
@@ -1787,14 +1797,16 @@ p { margin-bottom: 12px; }
           wordSpan.appendChild(charSpan);
           globalCharIdx++;
         }
-        el.appendChild(wordSpan);
+        lineWrap.appendChild(wordSpan);
 
         if (wi < words.length - 1) {
           const space = document.createElement('span');
           space.className = 'char-space';
-          el.appendChild(space);
+          lineWrap.appendChild(space);
         }
       });
+
+      el.appendChild(lineWrap);
 
       // Re-add <br> between lines
       if (li < lines.length - 1) {
